@@ -5,7 +5,8 @@ use std::path::Path;
 fn main() -> io::Result<()> {
     println!("Hello, world!");
 
-    fetter::read_dir(Path::new("example"))?;
+    let root_path = Path::new("example");
+    fetter::Fetter::create(root_path)?;
 
     Ok(())
 }
