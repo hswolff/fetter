@@ -8,7 +8,7 @@ use crate::config::Config;
 
 static TOML_FILENAME: &str = "fetter.toml";
 
-pub struct Fetter {}
+pub struct Fetter;
 
 impl Fetter {
     pub fn create(root_dir: &Path) -> io::Result<()> {
