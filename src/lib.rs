@@ -1,7 +1,7 @@
 use std::fs;
 use std::io;
+use std::io::ErrorKind;
 use std::path::Path;
-use std::process::exit;
 
 mod config;
 use crate::config::Config;
@@ -14,16 +14,10 @@ impl Fetter {
     pub fn create(root_dir: &Path) -> io::Result<()> {
         let fetter_toml = root_dir.join(TOML_FILENAME);
 
-        if !fetter_toml.exists() {
-            #[allow(unreachable_code)]
-            {
-                panic!("Fetter app not found");
-                exit(1);
-            }
-        }
+        // Since you want to panic, you can do it more easily using assertions
+        assert!(fetter_toml.exists(), "Fetter app not found");
 
         let config = Config::new(fetter_toml)?;
-
         println!("name: {}", config.name);
 
         read_dir(root_dir)?;
@@ -32,19 +26,25 @@ impl Fetter {
 }
 
 fn read_dir(dir: &Path) -> io::Result<()> {
-    if dir.is_dir() {
-        for entry in fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = entry.path();
+    // Return a custom IO error when it's not a dir
+    if !dir.is_dir() {
+        return Err(io::Error::new(
+            ErrorKind::Other,
+            "The provided dir is not a dir!",
+        ));
+    }
 
-            if path.is_dir() {
-                read_dir(&path)?;
-            } else {
-                let content = match fs::read_to_string(path) {
-                    Ok(content) => content,
-                    Err(_) => "Unable to parse".to_string(),
-                };
+    // Flatten will help you when getting an iterator of iterators
+    // And we just move through the iters that are Ok!
+    for entry in (fs::read_dir(dir)?).flatten() {
+        let path = entry.path();
 
+        // Let's use a match here just for the sake of having one, they are amazing!
+        match path.is_dir() {
+            true => read_dir(&path)?,
+            false => {
+                // read_to_string already returns a io:Result, don't need to handle it manually ;)
+                let content = fs::read_to_string(path)?;
                 println!("{:?}\n{}", entry, content)
             }
         }
